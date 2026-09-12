@@ -36,7 +36,7 @@ docs/                    Architecture, security, API, ingestion, DR, threat mode
 infrastructure/          Terraform environments and reusable modules
 backend/                 Python/Lambda application code
 frontend/                React/TypeScript player
--ingestion/              Local import tooling and schemas
+ingestion/               Local import tooling and schemas
 scripts/                 Bootstrap/deployment helper scripts
 .github/workflows/       CI/CD validation
 ```
