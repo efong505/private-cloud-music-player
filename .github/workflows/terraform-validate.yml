@@ -1,0 +1,31 @@
+name: Terraform Validate
+
+on:
+  push:
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform-validate.yml"
+  pull_request:
+    paths:
+      - "infrastructure/**"
+      - ".github/workflows/terraform-validate.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+      - name: Terraform format check
+        shell: bash
+        run: |
+          if find infrastructure -name '*.tf' -print -quit | grep -q .; then
+            terraform fmt -check -recursive infrastructure
+          else
+            echo "No Terraform files yet; scaffold only."
+          fi
