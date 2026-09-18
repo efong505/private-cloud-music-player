@@ -1,40 +1,92 @@
 # Security Model
 
+## Status
+
+This document describes the **target security model** for the Private Cloud Music Player.
+
+Some controls are already represented in repository source or CI, while the AWS runtime components remain pending implementation through WP-01 and later work packages. Nothing in this document should be read as proof that every target-state service is currently deployed.
+
 ## Authentication
 
-Amazon Cognito User Pools provides the owner identity. Self-registration is disabled. The intended initial state is one administrator-created user with required TOTP MFA and OAuth Authorization Code + PKCE.
+The target design uses Amazon Cognito User Pools for the owner identity.
+
+Intended properties:
+
+- no public self-registration;
+- one administrator-created owner account initially;
+- required TOTP MFA;
+- OAuth Authorization Code + PKCE.
 
 ## Authorization
 
-Protected API routes require valid Cognito JWTs. Media playback is authorized by the backend, which returns short-lived CloudFront signed URLs for individual objects.
+Protected API routes are intended to require valid Cognito JWTs.
 
-## S3 boundary
+Media playback is designed to be authorized by the backend, which returns short-lived CloudFront signed URLs for individual objects.
 
-All buckets have Block Public Access enabled and Object Ownership set to BucketOwnerEnforced. Protected media buckets grant CloudFront access through Origin Access Control only.
+## S3 Boundary
 
-Expected behavior:
+Required deployed-state controls:
+
+- S3 Block Public Access enabled for protected buckets;
+- Object Ownership set to `BucketOwnerEnforced`;
+- protected media bucket policy grants CloudFront access through Origin Access Control only;
+- no anonymous direct media reads.
+
+Expected WP-01 validation behavior:
 
 - Direct S3 media request: `403`.
 - Unsigned protected CloudFront media request: `403`.
 - Valid signed CloudFront media request: `200`.
 - Valid range request against protected media: `206`.
 
-## Signing material
+These HTTP results are acceptance targets until they are demonstrated and recorded by implementation evidence.
 
-CloudFront private signing keys must never be committed. Store private signing material in AWS Secrets Manager and grant retrieval only to the playback-signing Lambda. CloudFront receives only the corresponding public key through a trusted key group.
+## Signing Material
+
+CloudFront private signing keys must never be committed.
+
+Target handling:
+
+- private signing material stored in AWS Secrets Manager or another approved secure secret store;
+- retrieval granted only to the playback-signing runtime role;
+- CloudFront receives only the corresponding public key through a trusted key group.
 
 ## IAM
 
-Each runtime role receives only required actions and resources. Example: playback code may read metadata and the signing secret, but does not need permission to delete media or manage IAM.
+Each runtime role should receive only the actions and resources required for its function.
 
-## CI/CD identity
+Example: playback code may require metadata-read and signing-secret access, but should not require media deletion or IAM-administration permissions.
 
-GitHub Actions uses OIDC federation to assume narrowly scoped AWS roles. Long-lived AWS access keys are prohibited in repository secrets.
+## CI/CD Identity
 
-## Data protection
+Current CI workflows use minimal GitHub repository permissions.
 
-S3 default encryption is enabled. SSE-S3 is acceptable for the initial personal deployment; SSE-KMS may be introduced when key-level control is justified.
+When AWS deployment automation is introduced, GitHub Actions should use OIDC federation to assume narrowly scoped AWS roles. Long-lived AWS access keys are prohibited in repository secrets.
 
-## Account controls
+## Data Protection
 
-AWS root MFA is required. Production credentials, private keys, copyrighted media, Terraform state, and local environment secrets are excluded from source control.
+Target controls include:
+
+- S3 default encryption;
+- versioning where recovery requirements justify it;
+- protected Terraform state;
+- checksum-based media integrity verification.
+
+SSE-S3 is acceptable for the initial personal deployment. SSE-KMS may be introduced when key-level control is justified.
+
+## Account Controls
+
+Required AWS account-level controls include:
+
+- root-account MFA;
+- least-privilege IAM;
+- no committed production credentials;
+- no committed private keys;
+- no committed Terraform state;
+- no committed local environment secrets.
+
+## Evidence Boundary
+
+Architecture and security requirements are not equivalent to deployment proof.
+
+A control becomes implemented evidence only after the corresponding configuration exists and its validation has been recorded.
