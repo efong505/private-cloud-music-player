@@ -1,6 +1,8 @@
 # Private Cloud Music Player — Production Blueprint
 
-This document captures the initial 31-part design baseline for the project.
+> **Status:** Target-state architecture blueprint. This document describes intended production architecture and design decisions. It does **not** assert that every listed AWS component is currently deployed. The repository currently contains architecture, application/CI scaffolding, PowerShell ingestion tooling, and work-package definitions; WP-01 remains the first infrastructure implementation milestone.
+
+This document captures the initial design baseline for the project.
 
 ## 1. Target architecture
 Private S3 origins, CloudFront delivery, Cognito authentication, API Gateway, Lambda, DynamoDB, Route 53/ACM, and automated ingestion.
@@ -54,7 +56,9 @@ Use Lambda for lightweight metadata work. Use ECS/Fargate for heavier FFmpeg tra
 Separate docs, infrastructure, backend, frontend, ingestion, scripts, and GitHub Actions workflows.
 
 ## 18. Terraform
-Terraform owns S3, CloudFront, OAC, CloudFront key groups/public keys, Cognito, API Gateway, Lambda, DynamoDB, IAM, Route 53, ACM, CloudWatch, SQS/DLQs, and optional ECS/Fargate resources.
+Terraform is intended to own S3, CloudFront, OAC, CloudFront key groups/public keys, Cognito, API Gateway, Lambda, DynamoDB, IAM, Route 53, ACM, CloudWatch, SQS/DLQs, and optional ECS/Fargate resources.
+
+**Current implementation note:** the repository structure and validation workflow are in place, but Terraform resource definitions have not yet been added.
 
 ## 19. Secret handling
 Never commit CloudFront private signing keys. Store sensitive signing material in AWS Secrets Manager with narrowly scoped retrieval permissions.
@@ -72,7 +76,9 @@ Primary controls address public-bucket mistakes, direct-origin access, leaked pl
 Maintain physical media where available, a local archive, and an S3 archive. Use versioning and integrity checks. Derived streaming copies should be reproducible.
 
 ## 24. CI/CD
-Pull requests run Terraform formatting/validation, Python tests/linting, frontend builds, and security checks. GitHub Actions authenticates to AWS through OIDC.
+Current repository CI validates Python code, frontend builds, and Terraform formatting when Terraform files are present.
+
+Future AWS deployment automation should authenticate through GitHub Actions OIDC and narrowly scoped roles.
 
 ## 25. Environments
 Begin with dev and prod only. Avoid unnecessary environment sprawl.
@@ -83,11 +89,13 @@ Prefer serverless/on-demand services. Avoid 24/7 EC2, RDS, EKS, NAT Gateway, or 
 ## 27. MVP
 Cognito login/MFA; artists, albums, tracks, artwork; FLAC playback; seeking; previous/next; search; favorites; playlists; recently played; private S3; CloudFront; signed URLs; DynamoDB; Terraform; GitHub Actions; PowerShell album import; monitoring.
 
+This is the target MVP scope, not a statement that all features are already complete.
+
 ## 28. Phase 2
 PWA, Android client, gapless playback, ReplayGain, AAC/Opus variants, smart playlists, richer search, persistent queue, listening statistics, car mode, and casting.
 
-## 29. Phase 3 — AI
-Use AI against metadata and authorized library queries for natural-language playlisting, duplicate detection, collection maintenance, and listening-history queries. Do not give AI unrestricted AWS access.
+## 29. Future enhancements
+Potential future enhancements may include natural-language library queries, duplicate detection, collection-maintenance assistance, richer recommendations, and listening-history exploration. Any such capability would remain constrained to authorized application data and would not receive unrestricted AWS access.
 
 ## 30. Project boundary
 This is a private, single-user personal music-management system. Public registration, copyrighted-media sharing, resale, sublicensing, and public streaming are intentionally unsupported.
